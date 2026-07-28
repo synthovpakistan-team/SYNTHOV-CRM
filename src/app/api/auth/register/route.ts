@@ -40,10 +40,13 @@ export async function POST(req: Request) {
       { message: "User created successfully", userId: user.id },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Registration error:", error);
     return NextResponse.json(
-      { message: "Server error during registration" },
+      { 
+        message: error?.message || "Server error during registration",
+        error: error?.message || "Registration failed"
+      },
       { status: 500 }
     );
   }

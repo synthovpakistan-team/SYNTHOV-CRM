@@ -47,7 +47,7 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Something went wrong creating your account");
+        throw new Error(data.message || data.error || "Something went wrong creating your account");
       }
 
       setSuccess(true);
