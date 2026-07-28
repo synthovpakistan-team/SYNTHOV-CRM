@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// User Model for authenticated CRM users (Staff)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String   // Hashed password
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks     Task[]   // Task owners
+}
+
+// Contact Model for Clients/Leads
+model Contact {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String   @unique
+  phone       String?  // Twilio E.164 format +1...
+  companyName String?
+  status      String   // Lead, Prospect, Client
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  calls       CallLog[] // Interacion history
+}
+
+// Call Log Model to trace VOIP integration
+model CallLog {
+  id        String    @id @default(cuid())
+  contactId String
+  contact   Contact   @relation(fields: [contactId], references: [id])
+  direction String    // Inbound, Outbound
+  duration  Int       // Calls duration in seconds
+  notes     String?
+  twilioSid String?   @unique // The twilio CallSID
+  createdAt DateTime  @default(now())
+}
+
+// Simple Calendar Task/Schedule management
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  dueDate     DateTime
+  isCompleted Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
