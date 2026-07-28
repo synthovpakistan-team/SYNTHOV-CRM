@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import {
   Users,
   Phone,
@@ -10,121 +13,105 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-const stats = [
-  {
-    label: "Total Contacts",
-    value: "247",
-    icon: Users,
-    iconBg: "bg-indigo-100",
-    iconColor: "text-indigo-600",
-  },
-  {
-    label: "Calls Today",
-    value: "18",
-    icon: Phone,
-    iconBg: "bg-blue-100",
-    iconColor: "text-blue-600",
-  },
-  {
-    label: "Tasks Due",
-    value: "5",
-    icon: CalendarClock,
-    iconBg: "bg-orange-100",
-    iconColor: "text-orange-600",
-  },
-  {
-    label: "Messages",
-    value: "32",
-    icon: MessageSquare,
-    iconBg: "bg-green-100",
-    iconColor: "text-green-600",
-  },
-];
-
-const recentActivity = [
-  {
-    icon: PhoneCall,
-    iconBg: "bg-blue-100",
-    iconColor: "text-blue-600",
-    text: "Called Marcus Johnson — left voicemail",
-    time: "2 min ago",
-  },
-  {
-    icon: Mail,
-    iconBg: "bg-indigo-100",
-    iconColor: "text-indigo-600",
-    text: "Email sent to Sandra Lee re: renewal",
-    time: "14 min ago",
-  },
-  {
-    icon: MessageSquare,
-    iconBg: "bg-green-100",
-    iconColor: "text-green-600",
-    text: "SMS received from David Kim",
-    time: "31 min ago",
-  },
-  {
-    icon: Users,
-    iconBg: "bg-orange-100",
-    iconColor: "text-orange-600",
-    text: "New contact added: Priya Nair",
-    time: "1 hr ago",
-  },
-  {
-    icon: CheckSquare,
-    iconBg: "bg-purple-100",
-    iconColor: "text-purple-600",
-    text: "Task completed: Follow-up with Acme Corp",
-    time: "2 hr ago",
-  },
-];
-
-const upcomingTasks = [
-  {
-    id: 1,
-    title: "Follow up with BrightPath LLC",
-    due: "Today, 3:00 PM",
-    done: false,
-  },
-  {
-    id: 2,
-    title: "Send proposal to NovaTech Inc",
-    due: "Today, 5:00 PM",
-    done: false,
-  },
-  {
-    id: 3,
-    title: "Review contract with Stellar Co",
-    due: "Tomorrow, 10:00 AM",
-    done: false,
-  },
-  {
-    id: 4,
-    title: "Demo call with Orion Media",
-    due: "Jul 30, 2:00 PM",
-    done: true,
-  },
-];
+interface StatsData {
+  contactsCount: number;
+  tasksCount: number;
+  callsCount: number;
+  messagesCount: number;
+  recentActivity: any[];
+}
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<StatsData>({
+    contactsCount: 0,
+    tasksCount: 0,
+    callsCount: 18,
+    messagesCount: 32,
+    recentActivity: [],
+  });
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        const [statsRes, tasksRes] = await Promise.all([
+          fetch("/api/stats"),
+          fetch("/api/tasks"),
+        ]);
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStats(statsData);
+        }
+
+        if (tasksRes.ok) {
+          const tasksData = await tasksRes.json();
+          setTasks(tasksData.slice(0, 5));
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard data", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadDashboardData();
+  }, []);
+
+  const statCards = [
+    {
+      label: "Total Contacts",
+      value: stats.contactsCount.toString(),
+      icon: Users,
+      iconBg: "bg-indigo-100",
+      iconColor: "text-indigo-600",
+      link: "/contacts",
+    },
+    {
+      label: "Calls Today",
+      value: stats.callsCount.toString(),
+      icon: Phone,
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600",
+      link: "/calling",
+    },
+    {
+      label: "Tasks Due",
+      value: stats.tasksCount.toString(),
+      icon: CalendarClock,
+      iconBg: "bg-orange-100",
+      iconColor: "text-orange-600",
+      link: "/calendar",
+    },
+    {
+      label: "Messages",
+      value: stats.messagesCount.toString(),
+      icon: MessageSquare,
+      iconBg: "bg-green-100",
+      iconColor: "text-green-600",
+      link: "/messaging",
+    },
+  ];
+
   return (
     <div className="p-6 space-y-6">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Welcome back — here's what's happening today.
+          Welcome back — here's what's happening today in your CRM.
         </p>
       </div>
 
       {/* KPI Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => {
+        {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div
+            <Link
               key={stat.label}
-              className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-3"
+              href={stat.link}
+              className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow border border-gray-100"
             >
               <div
                 className={`w-10 h-10 rounded-full ${stat.iconBg} flex items-center justify-center`}
@@ -135,7 +122,7 @@ export default function DashboardPage() {
                 <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
                 <p className="text-sm text-gray-500 mt-0.5">{stat.label}</p>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
@@ -143,37 +130,49 @@ export default function DashboardPage() {
       {/* Bottom Two Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">
-            Recent Activity
-          </h2>
-          <ul className="space-y-3">
-            {recentActivity.map((item, idx) => {
-              const Icon = item.icon;
-              return (
-                <li key={idx} className="flex items-start gap-3">
-                  <div
-                    className={`w-8 h-8 rounded-full ${item.iconBg} flex items-center justify-center flex-shrink-0 mt-0.5`}
-                  >
-                    <Icon className={`w-4 h-4 ${item.iconColor}`} />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-gray-800">
+              Recent Contacts & Activity
+            </h2>
+            <Link
+              href="/contacts"
+              className="text-xs text-indigo-600 font-medium hover:underline"
+            >
+              View all
+            </Link>
+          </div>
+          {loading ? (
+            <p className="text-sm text-gray-400">Loading activity...</p>
+          ) : stats.recentActivity && stats.recentActivity.length > 0 ? (
+            <ul className="space-y-3">
+              {stats.recentActivity.map((contact: any) => (
+                <li key={contact.id} className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-xs">
+                    {contact.firstName?.[0]}
+                    {contact.lastName?.[0]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-700 leading-snug">
-                      {item.text}
+                    <p className="text-sm text-gray-800 font-medium leading-snug">
+                      Added Contact: {contact.firstName} {contact.lastName}
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5">{item.time}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {contact.email} {contact.companyName ? `• ${contact.companyName}` : ""}
+                    </p>
                   </div>
                 </li>
-              );
-            })}
-          </ul>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-500">No activity logged yet.</p>
+          )}
         </div>
 
         {/* Upcoming Tasks */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-gray-800">
-              Upcoming Tasks
+              Real Tasks & Reminders
             </h2>
             <Link
               href="/calendar"
@@ -182,32 +181,39 @@ export default function DashboardPage() {
               View all
             </Link>
           </div>
-          <ul className="space-y-3">
-            {upcomingTasks.map((task) => (
-              <li key={task.id} className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  defaultChecked={task.done}
-                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-sm leading-snug ${
-                      task.done
-                        ? "line-through text-gray-400"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    {task.title}
-                  </p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Calendar className="w-3 h-3 text-gray-400" />
-                    <p className="text-xs text-gray-400">{task.due}</p>
+          {loading ? (
+            <p className="text-sm text-gray-400">Loading tasks...</p>
+          ) : tasks.length > 0 ? (
+            <ul className="space-y-3">
+              {tasks.map((task) => (
+                <li key={task.id} className="flex items-start gap-3">
+                  <div className="mt-0.5">
+                    {task.isCompleted ? (
+                      <CheckSquare className="w-4 h-4 text-indigo-600" />
+                    ) : (
+                      <CalendarClock className="w-4 h-4 text-orange-500" />
+                    )}
                   </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className={`text-sm leading-snug ${
+                        task.isCompleted
+                          ? "line-through text-gray-400"
+                          : "text-gray-800 font-medium"
+                      }`}
+                    >
+                      {task.title}
+                    </p>
+                    {task.description && (
+                      <p className="text-xs text-gray-500 mt-0.5">{task.description}</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-500">No tasks created yet.</p>
+          )}
         </div>
       </div>
     </div>
